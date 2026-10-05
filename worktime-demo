@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Учёт времени и выработки (демо)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlVjZXQgdnJlbWVuaSIsCiAgInNob3J0X25hbWUiOiAiV29ya1RpbWUiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiMyNTYzZWIiLAogICJpY29ucyI6IFtdCn0=" />
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #dc2626;
+      --success: #16a34a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 70px;
+    }
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 14px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    header small {
+      opacity: 0.9;
+      font-size: 12px;
+    }
+
+    .container {
+      padding: 14px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    button.secondary {
+      background: #fff;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+    button.danger {
+      background: var(--danger);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    input, select {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+      margin-bottom: 10px;
+    }
+
+    .timer {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 6px 0;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .task-item {
+      border-left: 3px solid var(--primary);
+      padding-left: 10px;
+      margin-bottom: 12px;
+    }
+    .task-item .title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .task-item .meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 6px 0;
+      z-index: 20;
+    }
+    nav button {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      padding: 6px 10px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    nav button.active {
+      color: var(--primary);
+    }
+    nav button span {
+      font-size: 16px;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .inline {
+      display: inline-block;
+      margin-left: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Учёт времени и выработки (демо)</h1>
+    <small>Локальное демо, данные только в этом браузере</small>
+  </header>
+
+  <div class="container">
+
+    <!-- СМЕНА -->
+    <div id="section-shift" class="section active">
+      <div class="card">
+        <div class="row" style="justify-content: space-between;">
+          <div>
+            <div class="muted">Текущая смена</div>
+            <div id="shift-status" class="timer">Не начата</div>
+          </div>
+          <div>
+            <button id="btn-start-shift">Начать смену</button>
+            <button id="btn-stop-shift" class="danger" style="display:none;">Завершить</button>
+          </div>
+        </div>
+        <div id="shift-timer-block" style="display:none; margin-top:10px;">
+          <div class="muted">Время в смене:</div>
+          <div id="shift-timer" class="timer">00:00:00</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="muted" style="margin-bottom:6px;">Как это работает</div>
+        <ul style="margin:0; padding-left:18px; font-size:14px;">
+          <li>Нажмите «Начать смену», когда зашли в цех.</li>
+          <li>Добавляйте задачи: что делали, сколько деталей, за какое время.</li>
+          <li>В конце нажмите «Завершить смену».</li>
+          <li>Данные хранятся только в этом браузере (демо).</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ЗАДАЧИ -->
+    <div id="section-tasks" class="section">
+      <div class="card">
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <div class="muted">Новая задача</div>
+          <button id="btn-new-task">Создать</button>
+        </div>
+      </div>
+
+      <div id="task-form-card" class="card" style="display:none;">
+        <label>Операция</label>
+        <input id="task-operation" placeholder="Например: токарная, фрезерная, сборка" />
+
+        <label>Деталь / заказ</label>
+        <input id="task-part" placeholder="Например: вал, заказ 123" />
+
+        <label>Сделано, шт</label>
+        <input id="task-qty" type="number" min="0" step="1" placeholder="0" />
+
+        <div class="row" style="justify-content: space-between; align-items: center; margin-top:6px;">
+          <div class="muted">Время задачи</div>
+          <div>
+            <button id="btn-start-task" class="secondary">Старт</button>
+            <button id="btn-stop-task" class="danger">Стоп</button>
+          </div>
+        </div>
+        <div id="task-timer" class="timer" style="margin-top:6px;">00:00:00</div>
+        <div class="muted" id="task-time-range" style="margin-top:4px; font-size:12px;"></div>
+
+        <div class="row" style="margin-top:10px;">
+          <button id="btn-save-task" style="flex:1;">Сохранить задачу</button>
+          <button id="btn-cancel-task" class="secondary" style="flex:0 0 auto;">Отмена</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="muted" style="margin-bottom:6px;">Задачи за сегодня</div>
+        <div id="today-tasks-list"></div>
+      </div>
+    </div>
+
+    <!-- ИСТОРИЯ -->
+    <div id="section-history" class="section">
+      <div class="card">
+        <div class="muted" style="margin-bottom:6px;">История смен (локально)</div>
+        <div id="history-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <nav>
+    <button id="nav-shift" class="active">
+      <span>⏱️</span>
+      Смена
+    </button>
+    <button id="nav-tasks">
+      <span>🔧</span>
+      Задачи
+    </button>
+    <button id="nav-history">
+      <span>📋</span>
+      История
+    </button>
+  </nav>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function fmtTime(d) {
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mm = String(d.getMinutes()).padStart(2,'0');
+      const ss = String(d.getSeconds()).padStart(2,'0');
+      return `${hh}:${mm}:${ss}`;
+    }
+
+    function fmtDuration(ms) {
+      const totalSec = Math.max(0, Math.floor(ms/1000));
+      const h = Math.floor(totalSec/3600);
+      const m = Math.floor((totalSec%3600)/60);
+      const s = totalSec%60;
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function todayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem('worktime_demo_state');
+      if (!raw) {
+        return { currentShift: null, tasks: [], history: [] };
+      }
+      return JSON.parse(raw);
+    }
+
+    function saveState(state) {
+      localStorage.setItem('worktime_demo_state', JSON.stringify(state));
+    }
+
+    let state = loadState();
+    let taskTimerInterval = null;
+    let taskStartMoment = null;
+    let shiftTimerInterval = null;
+
+    const shiftStatusEl = $('shift-status');
+    const shiftTimerEl = $('shift-timer');
+    const shiftTimerBlock = $('shift-timer-block');
+    const btnStartShift = $('btn-start-shift');
+    const btnStopShift = $('btn-stop-shift');
+
+    function renderShift() {
+      if (!state.currentShift) {
+        shiftStatusEl.textContent = 'Не начата';
+        btnStartShift.style.display = 'inline-block';
+        btnStopShift.style.display = 'none';
+        shiftTimerBlock.style.display = 'none';
+        if (shiftTimerInterval) { clearInterval(shiftTimerInterval); shiftTimerInterval = null; }
+        return;
+      }
+      const start = new Date(state.currentShift.start);
+      const end = state.currentShift.end ? new Date(state.currentShift.end) : null;
+
+      if (!end) {
+        shiftStatusEl.textContent = 'Идёт смена';
+        btnStartShift.style.display = 'none';
+        btnStopShift.style.display = 'inline-block';
+        shiftTimerBlock.style.display = 'block';
+        if (!shiftTimerInterval) {
+          shiftTimerInterval = setInterval(() => {
+            const now = new Date();
+            shiftTimerEl.textContent = fmtDuration(now - start);
+          }, 1000);
+        }
+      } else {
+        shiftStatusEl.textContent = 'Завершена';
+        btnStartShift.style.display = 'inline-block';
+        btnStopShift.style.display = 'none';
+        shiftTimerBlock.style.display = 'block';
+        shiftTimerEl.textContent = fmtDuration(end - start);
+        if (shiftTimerInterval) { clearInterval(shiftTimerInterval); shiftTimerInterval = null; }
+      }
+    }
+
+    btnStartShift.addEventListener('click', () => {
+      if (state.currentShift) return;
+      state.currentShift = { start: new Date().toISOString(), end: null };
+      saveState(state);
+      renderShift();
+    });
+
+    btnStopShift.addEventListener('click', () => {
+      if (!state.currentShift || state.currentShift.end) return;
+      state.currentShift.end = new Date().toISOString();
+      const dateKey = todayKey();
+      const tasksToday = state.tasks.filter(t => t.date === dateKey);
+      state.history.unshift({
+        date: dateKey,
+        shiftStart: state.currentShift.start,
+        shiftEnd: state.currentShift.end,
+        tasksCount: tasksToday.length
+      });
+      saveState(state);
+      renderShift();
+      renderHistory();
+    });
+
+    const btnNewTask = $('btn-new-task');
+    const taskFormCard = $('task-form-card');
+    const taskOperation = $('task-operation');
+    const taskPart = $('task-part');
+    const taskQty = $('task-qty');
+    const taskTimerEl = $('task-timer');
+    const taskTimeRangeEl = $('task-time-range');
+    const btnStartTask = $('btn-start-task');
+    const btnStopTask = $('btn-stop-task');
+    const btnSaveTask = $('btn-save-task');
+    const btnCancelTask = $('btn-cancel-task');
+    const todayTasksList = $('today-tasks-list');
+
+    function resetTaskForm() {
+      taskOperation.value = '';
+      taskPart.value = '';
+      taskQty.value = '';
+      taskTimerEl.textContent = '00:00:00';
+      taskTimeRangeEl.textContent = '';
+      taskStartMoment = null;
+      if (taskTimerInterval) { clearInterval(taskTimerInterval); taskTimerInterval = null; }
+    }
+
+    function renderTodayTasks() {
+      const dateKey = todayKey();
+      const tasksToday = state.tasks.filter(t => t.date === dateKey).sort((a,b) => new Date(b.start) - new Date(a.start));
+      todayTasksList.innerHTML = '';
+      if (tasksToday.length === 0) {
+        todayTasksList.innerHTML = '<div class="muted">Пока нет задач за сегодня.</div>';
+        return;
+      }
+      tasksToday.forEach(t => {
+        const start = new Date(t.start);
+        const end = new Date(t.end);
+        const dur = fmtDuration(end - start);
+        const div = document.createElement('div');
+        div.className = 'task-item';
+        div.innerHTML = `
+          <div class="title">${escapeHtml(t.operation || 'Без операции')} — ${escapeHtml(t.part || 'Без детали')}</div>
+          <div class="meta">Сделано: ${t.qty ?? 0} шт · Время: ${fmtTime(start)} – ${fmtTime(end)} (${dur})</div>
+        `;
+        todayTasksList.appendChild(div);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    btnNewTask.addEventListener('click', () => {
+      if (!state.currentShift || state.currentShift.end) { alert('Сначала начните смену.'); return; }
+      resetTaskForm();
+      taskFormCard.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    btnCancelTask.addEventListener('click', () => {
+      taskFormCard.style.display = 'none';
+      resetTaskForm();
+    });
+
+    btnStartTask.addEventListener('click', () => {
+      if (!state.currentShift || state.currentShift.end) { alert('Сначала начните смену.'); return; }
+      if (taskStartMoment) return;
+      taskStartMoment = new Date();
+      taskTimeRangeEl.textContent = `Начало: ${fmtTime(taskStartMoment)}`;
+      taskTimerInterval = setInterval(() => {
+        const now = new Date();
+        taskTimerEl.textContent = fmtDuration(now - taskStartMoment);
+      }, 1000);
+    });
+
+    btnStopTask.addEventListener('click', () => {
+      if (!taskStartMoment) { alert('Нажмите «Старт», чтобы начать отсчёт времени задачи.'); return; }
+      const endMoment = new Date();
+      const startMoment = taskStartMoment;
+      if (taskTimerInterval) { clearInterval(taskTimerInterval); taskTimerInterval = null; }
+      taskTimeRangeEl.textContent = `${fmtTime(startMoment)} – ${fmtTime(endMoment)}`;
+      taskTimerEl.textContent = fmtDuration(endMoment - startMoment);
+      taskStartMoment = null;
+      btnStartTask.disabled = true;
+      btnStopTask.disabled = true;
+      setTimeout(() => { btnStartTask.disabled = false; btnStopTask.disabled = false; }, 300);
+    });
+
+    btnSaveTask.addEventListener('click', () => {
+      if (!state.currentShift || state.currentShift.end) { alert('Сначала начните смену.'); return; }
+      const operation = taskOperation.value.trim();
+      const part = taskPart.value.trim();
+      const qty = parseInt(taskQty.value || '0', 10);
+
+      if (!taskStartMoment && taskTimeRangeEl.textContent.includes('–')) {
+        // ok
+      } else if (!taskStartMoment) {
+        alert('Задайте время задачи (Старт → Стоп).');
+        return;
+      } else {
+        alert('Завершите время задачи (нажмите Стоп).');
+        return;
+      }
+
+      const rangeText = taskTimeRangeEl.textContent;
+      const match = rangeText.match(/(\d{2}:\d{2}:\d{2})\s*–\s*(\d{2}:\d{2}:\d{2})/);
+      if (!match) { alert('Не удалось считать время задачи. Попробуйте ещё раз.'); return; }
+      const nowBase = new Date();
+      const [_, sh, sm, ss, eh, em, es] = match;
+      const start = new Date(nowBase);
+      start.setHours(parseInt(sh,10), parseInt(sm,10), parseInt(ss,10), 0);
+      const end = new Date(nowBase);
+      end.setHours(parseInt(eh,10), parseInt(em,10), parseInt(es,10), 0);
+
+      if (end <= start) { alert('Время окончания должно быть позже начала.'); return; }
+
+      const task = {
+        id: Date.now().toString(),
+        date: todayKey(),
+        operation: operation || 'Без операции',
+        part: part || 'Без детали',
+        qty,
+        start: start.toISOString(),
+        end: end.toISOString()
+      };
+      state.tasks.push(task);
+      saveState(state);
+      renderTodayTasks();
+      taskFormCard.style.display = 'none';
+      resetTaskForm();
+    });
+
+    const historyList = $('history-list');
+    function renderHistory() {
+      historyList.innerHTML = '';
+      if (!state.history || state.history.length === 0) {
+        historyList.innerHTML = '<div class="muted">Пока нет завершённых смен.</div>';
+        return;
+      }
+      state.history.forEach(h => {
+        const start = new Date(h.shiftStart);
+        const end = new Date(h.shiftEnd);
+        const dur = fmtDuration(end - start);
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <div class="muted">Дата: ${h.date}</div>
+          <div style="margin-top:6px;">Смена: ${fmtTime(start)} – ${fmtTime(end)} (${dur})<br>Задач: ${h.tasksCount}</div>
+        `;
+        historyList.appendChild(div);
+      });
+    }
+
+    const navShift = $('nav-shift');
+    const navTasks = $('nav-tasks');
+    const navHistory = $('nav-history');
+    const sectionShift = $('section-shift');
+    const sectionTasks = $('section-tasks');
+    const sectionHistory = $('section-history');
+
+    function showSection(name) {
+      [sectionShift, sectionTasks, sectionHistory].forEach(s => s.classList.remove('active'));
+      [navShift, navTasks, navHistory].forEach(b => b.classList.remove('active'));
+      if (name === 'shift') { sectionShift.classList.add('active'); navShift.classList.add('active'); }
+      else if (name === 'tasks') { sectionTasks.classList.add('active'); navTasks.classList.add('active'); renderTodayTasks(); }
+      else if (name === 'history') { sectionHistory.classList.add('active'); navHistory.classList.add('active'); renderHistory(); }
+    }
+
+    navShift.addEventListener('click', () => showSection('shift'));
+    navTasks.addEventListener('click', () => showSection('tasks'));
+    navHistory.addEventListener('click', () => showSection('history'));
+
+    renderShift();
+    renderTodayTasks();
+    renderHistory();
+
+    if ('serviceWorker' in navigator) {
+      const swCode = `self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('fetch', e => {});`;
+      const blob = new Blob([swCode], {type:'application/javascript'});
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(()=>{});
+    }
+  </script>
+</body>
+</html>
